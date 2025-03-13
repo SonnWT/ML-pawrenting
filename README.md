@@ -5,7 +5,7 @@ This guide will help you set up and run the project on your local machine.
 
 ## Prerequisites
 Before you begin, ensure you have the following installed:
-- Python (recommended version: 3.x)
+- Python (recommended version: >= 3.8)
 - pip (Python package manager)
 
 ## Installation Steps
