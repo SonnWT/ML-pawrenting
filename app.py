@@ -1,3 +1,4 @@
+# import data
 from flask import Flask, render_template, Response
 import cv2
 import os
@@ -7,6 +8,7 @@ from ultralytics import YOLO
 from threading import Thread, Lock
 import time
 
+# Flask initialization
 app = Flask(__name__)
 
 # Fungsi untuk mengecek apakah model tersedia
@@ -55,12 +57,15 @@ class VideoStream:
         self.last_access = time.time()
         self.stopped = True
 
+    # start() → Menjalankan thread untuk membaca video dari webcam.
     def start(self):
         with self.lock:
             if self.stopped:
                 self.cap = cv2.VideoCapture(0)
                 self.stopped = False
                 Thread(target=self.update, daemon=True).start()
+
+    # update() → Loop untuk membaca frame video dari kamera.
 
     def update(self):
         while not self.stopped:
@@ -70,12 +75,14 @@ class VideoStream:
                 self.last_access = time.time()
             time.sleep(0.03)
 
+    # read() → Mengembalikan frame terbaru.
     def read(self):
         with self.lock:
             if self.frame is not None:
                 return self.ret, self.frame.copy()  # Gunakan `.copy()` untuk menghindari konflik thread
             return None, None  # Hindari error jika frame masih `None`
 
+    # stop() → Menghentikan video streaming.
     def stop(self):
         with self.lock:
             self.stopped = True
@@ -86,17 +93,20 @@ class VideoStream:
 # Inisialisasi VideoStream
 video_stream = VideoStream()
 
-
+# Fungsi Deteksi Hewan dan Emosi
 def detect_pet_and_emotion():
-    frame_skip = 2  # Lewati 5 frame sebelum inferensi
+    # frame_skip = 2 → Lewati beberapa frame untuk mengurangi lag.
+    frame_skip = 2  # Lewati 2 frame sebelum inferensi
     frame_count = 0
 
+    # Membaca frame dari kamera.
     while True:
         ret, frame = video_stream.read()
         if not ret:
             print("⚠️ Frame tidak bisa dibaca!")
             break
 
+        # Melewatkan beberapa frame untuk meningkatkan kecepatan deteksi.
         frame_count += 1
         if frame_count % frame_skip != 0:
             continue  # Skip frame untuk mengurangi lag
@@ -177,15 +187,18 @@ def detect_pet_and_emotion():
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
 
+# Menampilkan halaman utama (index.html).
 @app.route('/')
 def index():
     return render_template('index.html')
 
+# Mengirim stream video ke web browser.
 @app.route('/video_feed')
 def video_feed():
     video_stream.start()
     return Response(detect_pet_and_emotion(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
+# Menjalankan server Flask dan menangani Ctrl+C untuk menghentikan kamera.
 if __name__ == '__main__':
     try:
         app.run(debug=False, threaded=True)
