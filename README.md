@@ -1,5 +1,3 @@
-# ML-pawrenting
-
 # Project Setup Guide
 
 ## Introduction
